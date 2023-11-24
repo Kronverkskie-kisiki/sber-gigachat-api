@@ -1,0 +1,8 @@
+version: '3'
+
+services:
+  flask-chat-bot:
+    build: .
+    volumes:
+      - .:/app
+    network-mode: internal-net
