@@ -149,8 +149,8 @@ def post_example():
         answer = ask_gigachat(AUTH_TOKEN, prompt)
         print(answer)
         # TODO: make it prettier
-        # response = {"answer": answer.get("choices")[0].get("message").get("content")}
-        response = {"answer": "None"}
+        response = {"answer": answer.get("choices")[0].get("message").get("content")}
+        # response = {"answer": "None"}
         return jsonify(response)
     else:
         return jsonify({"status": "error", "message": "Invalid request method"})

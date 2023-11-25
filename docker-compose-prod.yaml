@@ -1,8 +1,11 @@
 version: '3'
 
 services:
-  flask-chat-bot:
+  gigachat:
+    container_name: gigachat
+    hostname: gigachat
     build: .
     volumes:
       - .:/app
-    network-mode: internal-net
+    network_mode: internal-net
+
