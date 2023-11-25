@@ -1,3 +1,4 @@
+from typing import Any
 import requests
 import os
 import uuid
@@ -14,6 +15,8 @@ GIGACHAT_TOKEN = os.getenv("auth_data")
 AUTH_TOKEN = os.getenv("access_token")
 TOKEN_EXPIRATION = os.getenv("expires_at")
 
+APP_PORT = 5000
+APP_HOST = "0.0.0.0"
 
 def get_auth_token(auth_data: str):
     headers = {
@@ -28,6 +31,12 @@ def get_auth_token(auth_data: str):
     # TODO: save uuid and data of the request to db
     print(f"code: {response.status_code}")
     return response.json()
+
+def update_auth_token(auth_data: str | None | Any):
+    if auth_data is None:
+        return None, None
+    response = get_auth_token(auth_data)
+    return (response.get("access_token"), response.get("expires_at"))
 
 
 def ask_gigachat(auth_data: str, prompt: str):
@@ -122,27 +131,14 @@ def loan_rating():
         + history
     )
 
-    #     В своей оценке используй следующие критерии:
-    #
-    # 1. Общий интегральный вывод по кредитной истории: хорошая, средняя, плохая.
-    # 2. По характеру займов признаки:
-    #     1. Часто использует микрозаймы.
-    #     2. Погашение старых кредитов за счет других кредитов.
-    # 3. Допускает прострочки.
-    # 4. Есть текущая просрочка.
-    #
-    # Ты не должен оценить общую финансовую ситуацию человека, а только дать оценку того что есть, не надо включать в ответ фраза типа "Из предоставленных данных нельзя сделать однозначный ответ" и тп
-    # # prompt = (
-    # "На основе данной кредитной истории оцени насколько хорошая, плохая, очень хорошая, очень плохая, средняя финансовая ситуация у человека. Твой ответ должен содержать только одно слово или словосочетание, описывающее это. В своем ответе учитывай такие параметры как общее число кредитов, зарплату, даты выплаты кредитов и частоту их оформления, существуют ли просрочки кредитов "
-    #     + history
-    # )
-
-    if time() < int(TOKEN_EXPIRATION):
-        #     # TODO: token update in runtime
-        print("getting new reg token")
-        new_token = get_auth_token(GIGACHAT_TOKEN)
-        AUTH_TOKEN = new_token.get("access_token")
-        TOKEN_EXPIRATION = new_token.get("expires_at")
+    if  time() > int(TOKEN_EXPIRATION):
+        print(f"exp: {TOKEN_EXPIRATION}, {time()}")
+        AUTH_TOKEN, TOKEN_EXPIRATION = update_auth_token(GIGACHAT_TOKEN)
+        # #     # TODO: token update in runtime
+        # print("getting new reg token")
+        # new_token = get_auth_token(GIGACHAT_TOKEN)
+        # AUTH_TOKEN = new_token.get("access_token")
+        # TOKEN_EXPIRATION = new_token.get("expires_at")
 
     answer = ask_gigachat(AUTH_TOKEN, prompt)
     print(answer)
@@ -158,7 +154,9 @@ def post_example():
     if request.method == "POST":
         json_data = request.get_json()
         prompt = json_data.get("prompt")
-        if time() < int(TOKEN_EXPIRATION):
+        print(f"token expired: {time() > int(TOKEN_EXPIRATION)}")
+        if time() > int(TOKEN_EXPIRATION):
+            print(f"exp: {TOKEN_EXPIRATION}, {time()}")
             #     # TODO: token update in runtime
             print("getting new reg token")
             new_token = get_auth_token(GIGACHAT_TOKEN)
@@ -176,10 +174,4 @@ def post_example():
 
 
 if __name__ == "__main__":
-    # if time() < int(TOKEN_EXPIRATION):
-    #     #     # TODO: token update in runtime
-    #     print("getting new reg token")
-    #     new_token = get_auth_token(GIGACHAT_TOKEN)
-    #     AUTH_TOKEN = new_token.get("access_token")
-    #     TOKEN_EXPIRATION = new_token.get("expires_at")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host=APP_HOST, port=APP_PORT, debug=True)
