@@ -62,6 +62,8 @@ app = Flask(__name__)
 
 @app.route("/api/loan_rating", methods=["POST"])
 def loan_rating():
+    global TOKEN_EXPIRATION
+    global AUTH_TOKEN
     history = """
 
     Работа:
@@ -134,6 +136,14 @@ def loan_rating():
     # "На основе данной кредитной истории оцени насколько хорошая, плохая, очень хорошая, очень плохая, средняя финансовая ситуация у человека. Твой ответ должен содержать только одно слово или словосочетание, описывающее это. В своем ответе учитывай такие параметры как общее число кредитов, зарплату, даты выплаты кредитов и частоту их оформления, существуют ли просрочки кредитов "
     #     + history
     # )
+
+    if time() < int(TOKEN_EXPIRATION):
+        #     # TODO: token update in runtime
+        print("getting new reg token")
+        new_token = get_auth_token(GIGACHAT_TOKEN)
+        AUTH_TOKEN = new_token.get("access_token")
+        TOKEN_EXPIRATION = new_token.get("expires_at")
+
     answer = ask_gigachat(AUTH_TOKEN, prompt)
     print(answer)
     # TODO: make it prettier
@@ -143,9 +153,18 @@ def loan_rating():
 
 @app.route("/api/raw_prompt", methods=["POST"])
 def post_example():
+    global TOKEN_EXPIRATION
+    global AUTH_TOKEN
     if request.method == "POST":
         json_data = request.get_json()
         prompt = json_data.get("prompt")
+        if time() < int(TOKEN_EXPIRATION):
+            #     # TODO: token update in runtime
+            print("getting new reg token")
+            new_token = get_auth_token(GIGACHAT_TOKEN)
+            AUTH_TOKEN = new_token.get("access_token")
+            TOKEN_EXPIRATION = new_token.get("expires_at")
+
         answer = ask_gigachat(AUTH_TOKEN, prompt)
         print(answer)
         # TODO: make it prettier
@@ -157,10 +176,10 @@ def post_example():
 
 
 if __name__ == "__main__":
-    if time() < int(TOKEN_EXPIRATION):
-        #     # TODO: token update in runtime
-        print("getting new reg token")
-        new_token = get_auth_token(GIGACHAT_TOKEN)
-        AUTH_TOKEN = new_token.get("access_token")
-        TOKEN_EXPIRATION = new_token.get("expires_at")
+    # if time() < int(TOKEN_EXPIRATION):
+    #     #     # TODO: token update in runtime
+    #     print("getting new reg token")
+    #     new_token = get_auth_token(GIGACHAT_TOKEN)
+    #     AUTH_TOKEN = new_token.get("access_token")
+    #     TOKEN_EXPIRATION = new_token.get("expires_at")
     app.run(host='0.0.0.0', port=5000, debug=True)
