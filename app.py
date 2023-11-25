@@ -15,7 +15,13 @@ GIGACHAT_TOKEN_URL = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
 load_dotenv()
 
 PROMPTS = {
-    "loan_rating": "Сделай выжимку по данной истории. Оцени, насколько хорошая или плохая финансовая ситуация у человека и какие факторы на нее влияют: "
+    "loan_rating": "Сделай выжимку по данной истории. Оцени, насколько хорошая или плохая финансовая ситуация у человека и какие факторы на нее влияют: ",
+    "vk_analitics_pt_1": """
+    Ты получишь на вход структуру JSON в треугольных скобках. Эта структура описывает профиль человека в социальной сети. Структура обладает полями: о себе(about), карьера(career), контакты(contscts), город(city), страна(country), пол(sex), сайт(site), отношения(relation), родственники(relatives), университеты(universities), статус(status). Некоторые из полей могут быть пустыми. Твоя задача: Если есть что то в поле about, напиши: “О человеке: <about>” Если есть что то в поле mobile_phone, напиши: “Номер телефона: <mobile_phone>” Если есть что то в поле site, напиши: “Сайт: <site>” Если есть что то в поле universities, о каждом из объектов в массиве напиши: “Полученное образование: <faculty_name>, <name>” Если есть что то в поле career, о каждом из объектов в массиве напиши: “Опыт работы: …” Если в поле relatives есть объект с типом parent, о каждом из таких объектов в массиве напиши: “Есть родственник родитель с идентификатором : <id>” Ответ должен быть около 400 знаков. Сделай ответ для следующего профиля:
+    <""",
+    "vk_analitics_pt_2": """>
+    Убедись, что в ответе есть вся информация из непустых полей структуры. Не придумывай информацию, используй ее только из структуры.
+    """,
 }
 
 
@@ -165,6 +171,24 @@ def loan_rating():
     answer = ask_gigachat(AUTH_TOKEN, prompt)
     app.logger.info(answer)
     # TODO: make it prettier
+    response = {"answer": answer.get("choices")[0].get("message").get("content")}
+    return jsonify(response)
+
+
+@app.route("/api/vk_analisis", methods=["POST"])
+def vk_analisis():
+    global TOKEN_EXPIRATION
+    global AUTH_TOKEN
+
+    profile_info = request.get_json().get("profile_info")
+    prompt = PROMPTS["vk_analitics_pt_1"] + profile_info + PROMPTS["vk_analitics_pt_2"]
+
+    if time() < int(TOKEN_EXPIRATION):
+        (AUTH_TOKEN, TOKEN_EXPIRATION) = update_auth_token(GIGACHAT_TOKEN)
+
+    answer = ask_gigachat(AUTH_TOKEN, prompt)
+    app.logger.info(answer)
+
     response = {"answer": answer.get("choices")[0].get("message").get("content")}
     return jsonify(response)
 
